@@ -25,7 +25,80 @@ def input_default(prompt, default_value):
     value = input(f"{CYAN}{prompt} [{default_value}]: {RESET}")
     return value.strip() if value.strip() else str(default_value)
 
-# ... (create_droplet and get_droplet_ip functions remain unchanged) ...
+def create_droplet(token, name, region, size, image, password):
+    # Cloud-init script to set password and enable SSH password auth
+    user_data = f"""#!/bin/bash
+# Enable password authentication in SSH
+sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+systemctl restart sshd
+
+# Set root password
+echo "root:{password}" | chpasswd
+"""
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "name": name,
+        "region": region,
+        "size": size,
+        "image": image,
+        "user_data": user_data,
+        "tags": ["antigravity-deployed"]
+    }
+
+    p_bytes = json.dumps(payload).encode('utf-8')
+    req = urllib.request.Request(
+        "https://api.digitalocean.com/v2/droplets",
+        data=p_bytes,
+        headers=headers,
+        method="POST"
+    )
+
+    print(f"{YELLOW}Creating droplet '{name}'...{RESET}")
+    
+    try:
+        with urllib.request.urlopen(req) as resp:
+            if resp.status == 202:
+                data = json.load(resp)
+                droplet_id = data['droplet']['id']
+                print(f"{GREEN}✅ Initiated! ID: {droplet_id}{RESET}")
+                return droplet_id
+            else:
+                print(f"{RED}❌ Failed. Status: {resp.status}{RESET}")
+                print(resp.read().decode())
+                return None
+    except urllib.error.HTTPError as e:
+        print(f"{RED}❌ HTTP Error: {e}{RESET}")
+        print(e.read().decode())
+        return None
+    except Exception as e:
+        print(f"{RED}❌ Error: {e}{RESET}")
+        return None
+
+def get_droplet_ip(token, droplet_id):
+    headers = {"Authorization": f"Bearer {token}"}
+    for _ in range(30): # Wait up to 150 seconds
+        time.sleep(5)
+        try:
+            req = urllib.request.Request(
+                f"https://api.digitalocean.com/v2/droplets/{droplet_id}",
+                headers=headers
+            )
+            with urllib.request.urlopen(req) as resp:
+                info = json.load(resp)
+                networks = info.get('droplet', {}).get('networks', {}).get('v4', [])
+                for net in networks:
+                    if net['type'] == 'public':
+                        return net['ip_address']
+        except:
+            pass
+    return None
 
 def main():
     print(f"{CYAN}=== DigitalOcean Droplet Deployer ==={RESET}")

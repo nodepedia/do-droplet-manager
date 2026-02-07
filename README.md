@@ -20,10 +20,9 @@ A set of Python scripts to easily create and manage DigitalOcean droplets via th
    python3 deploy_droplets.py
    ```
 
-## Scripts
+## Script
 
 - `deploy_droplets.py`: The main interactive script for multi-droplet deployment.
-- `create_droplet.py`: A simpler version of the script for single droplet creation.
 
 ---
 Created by Antigravity AI.
