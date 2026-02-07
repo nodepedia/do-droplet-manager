@@ -124,7 +124,30 @@ def main():
         print(f"{RED}Invalid number.{RESET}")
         sys.exit(1)
 
-    region = input_default("Region", DEFAULT_REGION)
+    # Region Selection Menu
+    regions = {
+        "1": "sgp1 (Singapore)",
+        "2": "ams3 (Amsterdam)",
+        "3": "fra1 (Frankfurt)",
+        "4": "nyc1 (New York)",
+        "5": "sfo3 (San Francisco)",
+        "6": "blr1 (Bangalore)",
+        "7": "lon1 (London)",
+        "8": "tor1 (Toronto)"
+    }
+    
+    print(f"\n{CYAN}Select Region:{RESET}")
+    for k, v in regions.items():
+        print(f" {k}. {v}")
+    
+    region_choice = input(f"{CYAN}Enter choice [1 for sgp1]: {RESET}").strip()
+    if not region_choice:
+        region = "sgp1"
+    elif region_choice in regions:
+        region = regions[region_choice].split(" ")[0]
+    else:
+        region = region_choice # Allow manual slug entry if not in list
+
     size = input_default("Size", DEFAULT_SIZE)
     image = input_default("Image", DEFAULT_IMAGE)
     password = input_default("Root Password", DEFAULT_PASSWORD)
