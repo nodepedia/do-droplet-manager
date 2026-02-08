@@ -8,8 +8,6 @@ import getpass
 
 # Default Configuration
 DEFAULT_API_TOKEN = "" # Input your token here
-DEFAULT_COUNT = 1
-DEFAULT_REGION = "sgp1"
 DEFAULT_SIZE = "s-2vcpu-2gb"
 DEFAULT_IMAGE = "ubuntu-22-04-x64"
 DEFAULT_PASSWORD = "Cuba@123Tot"
@@ -20,6 +18,20 @@ GREEN = "\033[92m"
 YELLOW = "\033[93m"
 RED = "\033[91m"
 RESET = "\033[0m"
+
+# Target Regions (Total 10 unique regions for 10 droplets)
+TARGET_REGIONS = [
+    "sgp1", # Singapore
+    "ams3", # Amsterdam
+    "fra1", # Frankfurt
+    "nyc1", # New York 1
+    "nyc3", # New York 3
+    "sfo3", # San Francisco
+    "blr1", # Bangalore
+    "lon1", # London
+    "tor1", # Toronto
+    "syd1"  # Sydney
+]
 
 def input_default(prompt, default_value):
     value = input(f"{CYAN}{prompt} [{default_value}]: {RESET}")
@@ -60,7 +72,7 @@ echo "root:{password}" | chpasswd
         method="POST"
     )
 
-    print(f"{YELLOW}Creating droplet '{name}'...{RESET}")
+    print(f"{YELLOW}Creating droplet '{name}' in {region}...{RESET}")
     
     try:
         with urllib.request.urlopen(req) as resp:
