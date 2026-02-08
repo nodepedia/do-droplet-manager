@@ -129,11 +129,13 @@ def main():
         "1": "sgp1 (Singapore)",
         "2": "ams3 (Amsterdam)",
         "3": "fra1 (Frankfurt)",
-        "4": "nyc1 (New York)",
-        "5": "sfo3 (San Francisco)",
-        "6": "blr1 (Bangalore)",
-        "7": "lon1 (London)",
-        "8": "tor1 (Toronto)"
+        "4": "nyc1 (New York 1)",
+        "5": "nyc3 (New York 3)",
+        "6": "sfo3 (San Francisco)",
+        "7": "blr1 (Bangalore)",
+        "8": "lon1 (London)",
+        "9": "tor1 (Toronto)",
+        "10": "syd1 (Sydney)"
     }
     
     print(f"\n{CYAN}Select Region:{RESET}")
