@@ -20,6 +20,7 @@ RED = "\033[91m"
 RESET = "\033[0m"
 
 # Target Regions (Total 10 unique regions for 10 droplets)
+# We pick 10 most reliable regions from the 13 available
 TARGET_REGIONS = [
     "sgp1", # Singapore
     "ams3", # Amsterdam
@@ -32,10 +33,6 @@ TARGET_REGIONS = [
     "tor1", # Toronto
     "syd1"  # Sydney
 ]
-
-def input_default(prompt, default_value):
-    value = input(f"{CYAN}{prompt} [{default_value}]: {RESET}")
-    return value.strip() if value.strip() else str(default_value)
 
 def create_droplet(token, name, region, size, image, password):
     # Cloud-init script to set password and enable SSH password auth
@@ -113,8 +110,9 @@ def get_droplet_ip(token, droplet_id):
     return None
 
 def main():
-    print(f"{CYAN}=== DigitalOcean Droplet Deployer ==={RESET}")
-    print("Leaving a field empty uses the default value shown in brackets.\n")
+    print(f"{CYAN}=== DigitalOcean Multi-Region Deployer (10 Droplets) ==={RESET}")
+    print("This script will automatically deploy 10 droplets across 10 regions.")
+    print(f"Regions: {YELLOW}{', '.join(TARGET_REGIONS)}{RESET}\n")
 
     # Get inputs
     token = os.getenv("DIGITALOCEAN_TOKEN") or DEFAULT_API_TOKEN
@@ -129,70 +127,38 @@ def main():
         print(f"{RED}Token required!{RESET}")
         sys.exit(1)
 
-    count_str = input_default("Number of droplets to create", DEFAULT_COUNT)
-    try:
-        count = int(count_str)
-    except ValueError:
-        print(f"{RED}Invalid number.{RESET}")
-        sys.exit(1)
+    print(f"\n{CYAN}Configuration (Fixed):{RESET}")
+    print(f"Count: 10 droplets")
+    print(f"Size: {DEFAULT_SIZE}")
+    print(f"Image: {DEFAULT_IMAGE}")
+    print(f"Password: {DEFAULT_PASSWORD}")
 
-    # Region Selection Menu
-    regions = {
-        "1": "sgp1 (Singapore)",
-        "2": "ams3 (Amsterdam)",
-        "3": "fra1 (Frankfurt)",
-        "4": "nyc1 (New York 1)",
-        "5": "nyc3 (New York 3)",
-        "6": "sfo3 (San Francisco)",
-        "7": "blr1 (Bangalore)",
-        "8": "lon1 (London)",
-        "9": "tor1 (Toronto)",
-        "10": "syd1 (Sydney)"
-    }
-    
-    print(f"\n{CYAN}Select Region:{RESET}")
-    for k, v in regions.items():
-        print(f" {k}. {v}")
-    
-    region_choice = input(f"{CYAN}Enter choice [1 for sgp1]: {RESET}").strip()
-    if not region_choice:
-        region = "sgp1"
-    elif region_choice in regions:
-        region = regions[region_choice].split(" ")[0]
-    else:
-        region = region_choice # Allow manual slug entry if not in list
-
-    size = input_default("Size", DEFAULT_SIZE)
-    image = input_default("Image", DEFAULT_IMAGE)
-    password = input_default("Root Password", DEFAULT_PASSWORD)
-
-    print(f"\n{YELLOW}Summary:{RESET}")
-    print(f"Creating {count} droplet(s)")
-    print(f"Region: {region} | Size: {size}")
-    print(f"OS: {image}")
-    
-    confirm = input(f"\n{CYAN}Proceed? [Y/n]: {RESET}")
+    confirm = input(f"\n{CYAN}Proceed with deployment? [Y/n]: {RESET}")
     if confirm.lower() == 'n':
+        print("Cancelled.")
         sys.exit(0)
 
     results = []
     
-    for i in range(count):
-        name = f"worker-{int(time.time())}-{i+1}"
-        droplet_id = create_droplet(token, name, region, size, image, password)
+    for i, region in enumerate(TARGET_REGIONS):
+        name = f"worker-{int(time.time())}-{region}"
+        # Small delay to prevent issues
+        if i > 0: time.sleep(1) 
+        
+        droplet_id = create_droplet(token, name, region, DEFAULT_SIZE, DEFAULT_IMAGE, DEFAULT_PASSWORD)
         if droplet_id:
-            results.append({"name": name, "id": droplet_id})
+            results.append({"name": name, "id": droplet_id, "region": region})
     
-    print(f"\n{YELLOW}Waiting for IP addresses (this takes a moment)...{RESET}")
+    print(f"\n{YELLOW}Waiting for IP addresses...{RESET}")
     
     final_output = []
     for item in results:
         ip = get_droplet_ip(token, item['id'])
         if ip:
-            print(f"{GREEN}✔ {item['name']} is READY! IP: {ip}{RESET}")
-            final_output.append(f"{ip} | {item['name']}")
+            print(f"{GREEN}✔ {item['name']} ({item['region']}) is READY! IP: {ip}{RESET}")
+            final_output.append(f"{ip} | {item['name']} | {item['region']}")
         else:
-            print(f"{RED}⚠ {item['name']} timed out waiting for IP.{RESET}")
+            print(f"{RED}⚠ {item['name']} ({item['region']}) timed out waiting for IP.{RESET}")
 
     # Save to file
     if final_output:
